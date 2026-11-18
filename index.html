@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5T班數學大挑戰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            overflow: hidden;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            height: 95vh;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 2rem;
+            flex: 1;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .screen.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .btn-option {
+            width: 100%;
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            border-radius: 16px;
+            border: 3px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #334155;
+            transition: all 0.2s;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .btn-option:hover:not(:disabled) {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        .btn-option:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .btn-option.correct {
+            border-color: #22c55e !important;
+            background: #dcfce7 !important;
+            color: #166534 !important;
+            opacity: 1 !important;
+        }
+        .btn-option.wrong {
+            border-color: #ef4444 !important;
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+        }
+
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            font-weight: 900;
+            margin: 0 6px;
+            line-height: 1.1;
+        }
+        .fraction span:first-child {
+            border-bottom: 3px solid currentColor;
+            padding: 0 6px;
+        }
+        .fraction span:last-child {
+            padding: 0 6px;
+        }
+
+        /* Bar Model Animation */
+        .bar-container {
+            width: 100%;
+            max-width: 500px;
+            height: 64px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            border: 3px solid #94a3b8;
+            display: flex;
+            overflow: hidden;
+            margin: 1.5rem auto;
+            position: relative;
+        }
+        .bar-piece {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: white;
+            font-size: 1.5rem;
+            border-right: 3px solid white;
+            opacity: 0;
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .bar-piece:last-child { border-right: none; }
+        .bar-piece.show { opacity: 1; transform: scaleY(1); }
+    </style>
+</head>
+<body>
+
+<div class="game-container" id="game-box">
+    
+    <!-- ================= MENU SCREEN ================= -->
+    <div id="screen-menu" class="screen active justify-center text-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+        <div class="text-7xl mb-6 drop-shadow-lg">🏫 🎮</div>
+        <h1 class="text-4xl md:text-5xl font-black mb-4 leading-tight">5T班數學大挑戰</h1>
+        <p class="text-lg md:text-xl mb-10 opacity-90 font-bold bg-black/20 p-4 rounded-xl inline-block">
+            今天有 8 位同學去比賽了！<br>讓我們分兩個階段來進行今天的特訓，一起追上進度！
+        </p>
+        
+        <div class="flex flex-col gap-5 w-full max-w-sm">
+            <button onclick="startPart(1)" class="bg-white text-blue-700 hover:bg-blue-50 font-black text-xl py-5 px-8 rounded-2xl shadow-xl transform transition hover:scale-105 border-4 border-blue-200 flex flex-col items-center gap-1">
+                <span>🌟 第一部分：溫故知新</span>
+                <span class="text-sm font-bold text-blue-500">代數符號(一) 基礎概念 (9題)</span>
+            </button>
+            <button onclick="startPart(2)" class="bg-yellow-400 text-yellow-900 hover:bg-yellow-300 font-black text-xl py-5 px-8 rounded-2xl shadow-xl transform transition hover:scale-105 border-4 border-yellow-200 flex flex-col items-center gap-1">
+                <span>🚀 第二部分：進階特訓</span>
+                <span class="text-sm font-bold text-yellow-700">代數符號(二) 建模與應用 (5題)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= DYNAMIC QUESTION SCREEN ================= -->
+    <div id="screen-question" class="screen">
+        <!-- Header / Progress -->
+        <div class="w-full flex justify-between items-center mb-6 border-b-2 border-gray-100 pb-4">
+            <span id="q-badge" class="px-4 py-1.5 rounded-full font-bold text-sm tracking-widest text-white shadow-sm"></span>
+            <span id="q-progress" class="text-gray-500 font-black text-lg"></span>
+        </div>
+        
+        <!-- Icon & Title -->
+        <div id="q-icon" class="w-full text-center mb-4 text-7xl drop-shadow-md"></div>
+        <h2 id="q-title" class="text-2xl md:text-3xl font-black text-gray-800 mb-6 text-center leading-relaxed w-full max-w-2xl"></h2>
+        
+        <!-- Hint Box -->
+        <div id="q-hint-container" class="w-full max-w-xl bg-blue-50 p-4 rounded-xl border-2 border-blue-200 mb-6 text-center hidden shadow-inner">
+            <p id="q-hint-text" class="font-bold text-blue-800 text-lg"></p>
+        </div>
+
+        <!-- Special Animation Container (Bar Model) -->
+        <div id="q-special-anim" class="w-full max-w-xl hidden mb-8"></div>
+
+        <!-- Options Grid -->
+        <div id="q-options" class="w-full max-w-xl flex flex-col gap-3"></div>
+
+        <!-- Feedback Box -->
+        <div id="q-feedback" class="hidden w-full max-w-xl mt-6 p-5 rounded-2xl font-black text-center text-lg md:text-xl shadow-lg transform transition-all"></div>
+        
+        <!-- Next Button -->
+        <button id="q-next-btn" onclick="nextQuestion()" class="hidden mt-8 text-white font-black text-xl py-4 px-10 rounded-full shadow-xl transform transition hover:scale-105 active:scale-95"></button>
+    </div>
+
+    <!-- ================= END SCREEN ================= -->
+    <div id="screen-end" class="screen justify-center text-center bg-gradient-to-br from-green-400 to-teal-500 text-white">
+        <div class="text-8xl mb-6 drop-shadow-lg animate-bounce">🏆</div>
+        <h1 class="text-4xl md:text-5xl font-black mb-4">太棒了！特訓完成！</h1>
+        <p class="text-xl mb-10 font-bold">你已經完全掌握了這個部分的代數知識！</p>
+        <button onclick="backToMenu()" class="bg-white text-teal-700 hover:bg-teal-50 font-black text-xl py-4 px-10 rounded-full shadow-xl transform transition hover:scale-105">
+            返回主選單 🏠
+        </button>
+    </div>
+
+</div>
+
+<script>
+    // --- Audio System ---
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        if (type === 'correct') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.setValueAtTime(900, now + 0.1);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(250, now);
+            osc.frequency.exponentialRampToValueAtTime(120, now + 0.3);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'victory') {
+            // Fanfare
+            const notes = [440, 554, 659, 880];
+            notes.forEach((f, i) => {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(f, now + i * 0.15);
+                g.gain.setValueAtTime(0.3, now + i * 0.15);
+                g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
+                o.start(now + i * 0.15);
+                o.stop(now + i * 0.15 + 0.4);
+            });
+        }
+    }
+
+    // --- Question Database ---
+    const qPart1 = [
+        {
+            icon: '🛒 🍊', badge: '第一部分：重溫 (未知數)', badgeColor: 'bg-blue-500',
+            q: '媽媽在超級市場說：「這裏有 <span class="text-orange-500 text-3xl">n</span> 個橙。」<br>請問 <span class="text-orange-500">n</span> 是一個什麼數？',
+            hint: '在數學中，我們經常使用英文字母（如 n, a, P）來代表一些還不知道確實數值的數量。',
+            options: [
+                { html: 'A. 未知數', correct: true, exp: '答對了！一個未知道數值的數，可稱為「未知數」。' },
+                { html: 'B. 已知數', correct: false, exp: '再想想！因為我們還沒數清楚，所以數量是未知的。' }
+            ]
+        },
+        {
+            icon: '🍪 ➕', badge: '第一部分：重溫 (加法 1)', badgeColor: 'bg-teal-500',
+            q: '碟子上有曲奇 <span class="text-amber-600 text-3xl">f</span> 塊，再加上旁邊的 <span class="text-blue-600 text-3xl">5</span> 塊。<br>請用「代數式」表示共有曲奇多少塊？',
+            options: [
+                { html: 'A. <span class="text-amber-600 text-2xl">f</span> + <span class="text-blue-600 text-2xl">5</span>', correct: true, exp: '正確！含有代數符號的算式稱為代數式，這裏是加法。' },
+                { html: 'B. <span class="text-blue-600 text-2xl">5</span> + <span class="text-amber-600 text-2xl">f</span>', correct: false, exp: '雖然結果一樣，但依題意是「原有 f 塊，再加 5 塊」，所以 f 寫前面更好喔！' },
+                { html: 'C. <span class="text-blue-600 text-2xl">5</span><span class="text-amber-600 text-2xl">f</span>', correct: false, exp: '這是乘法的表示方式喔！題目是加上 5 塊。' }
+            ]
+        },
+        {
+            icon: '🍪 🍪', badge: '第一部分：重溫 (加法 2)', badgeColor: 'bg-teal-500',
+            q: '碟子上有曲奇 <span class="text-amber-600 text-3xl">d</span> 塊，再加上旁邊的 <span class="text-blue-600 text-3xl">7</span> 塊。<br>代數式是：',
+            options: [
+                { html: '<span class="text-amber-600 text-2xl">d</span> + <span class="text-blue-600 text-2xl">7</span>', correct: true, exp: '非常棒！完美掌握加法代數式。' },
+                { html: '<span class="text-amber-600 text-2xl">d</span> - <span class="text-blue-600 text-2xl">7</span>', correct: false, exp: '題目是「加上」，所以要用加號 (+)。' }
+            ]
+        },
+        {
+            icon: '🖊️ ➖', badge: '第一部分：重溫 (減法 1)', badgeColor: 'bg-indigo-500',
+            q: '文具店原有 <span class="text-blue-600 text-3xl">100</span> 枝原子筆。售出了 <span class="text-red-500 text-3xl">K</span> 枝後，還餘下多少枝？',
+            options: [
+                { html: '<span class="text-blue-600 text-2xl">100</span> - <span class="text-red-500 text-2xl">K</span>', correct: true, exp: '太棒了！用原有數量 (100) 減去售出數量 (K)。' },
+                { html: '<span class="text-red-500 text-2xl">K</span> - <span class="text-blue-600 text-2xl">100</span>', correct: false, exp: '不對喔！減法有順序之分，必須是「原有的」減去「售出的」。' }
+            ]
+        },
+        {
+            icon: '📏 ➖', badge: '第一部分：重溫 (減法 2)', badgeColor: 'bg-indigo-500',
+            q: '直尺原有 <span class="text-purple-600 text-3xl">w</span> 把，售出了 <span class="text-red-500 text-3xl">5</span> 把，還餘下多少把？',
+            options: [
+                { html: '<span class="text-purple-600 text-2xl">w</span> - <span class="text-red-500 text-2xl">5</span>', correct: true, exp: '完全正確！' },
+                { html: '<span class="text-red-500 text-2xl">5</span> - <span class="text-purple-600 text-2xl">w</span>', correct: false, exp: '小心順序！應該是 原有 (w) 減 售出 (5)。' }
+            ]
+        },
+        {
+            icon: '🧇 ✖️', badge: '第一部分：重溫 (乘法 1)', badgeColor: 'bg-orange-500',
+            q: '小食店的雞蛋仔每份 <span class="text-blue-600 text-3xl">P</span> 元，仲謙買了 <span class="text-red-500 text-3xl">2</span> 份。<br>共需付多少元？',
+            hint: '代數符號與數字之間的乘號 (×) 一般省略不寫，並先寫數字，後寫字母。',
+            options: [
+                { html: '<span class="text-red-500 text-2xl">2</span><span class="text-blue-600 text-2xl">P</span>', correct: true, exp: '答對了！P × 2 省略乘號後，數字排前面變成 2P。' },
+                { html: '<span class="text-blue-600 text-2xl">P</span><span class="text-red-500 text-2xl">2</span>', correct: false, exp: '錯了！數字必須寫在英文字母的前面！' },
+                { html: '<span class="text-blue-600 text-2xl">P</span> + <span class="text-red-500 text-2xl">2</span>', correct: false, exp: '這是買 2 份，需要用乘法。' }
+            ]
+        },
+        {
+            icon: '🍗 ✖️', badge: '第一部分：重溫 (乘法 2)', badgeColor: 'bg-orange-500',
+            q: '雞翼每隻 <span class="text-red-500 text-3xl">12</span> 元，芷柔買了 <span class="text-blue-600 text-3xl">T</span> 隻。<br>共需付多少元？',
+            options: [
+                { html: '<span class="text-red-500 text-2xl">12</span><span class="text-blue-600 text-2xl">T</span>', correct: true, exp: '做得好！12 × T = 12T。' },
+                { html: '<span class="text-blue-600 text-2xl">T</span><span class="text-red-500 text-2xl">12</span>', correct: false, exp: '記得規矩：數字永遠排在字母前面！' }
+            ]
+        },
+        {
+            icon: '🫙 ➗', badge: '第一部分：重溫 (除法 1)', badgeColor: 'bg-pink-500',
+            q: '零食店有 <span class="text-blue-600 text-3xl">4000</span> 克朱古力豆。<br>職員把它們平分成 <span class="text-green-600 text-3xl">m</span> 袋，每袋有多少克？',
+            hint: '含有代數符號的除式，一般以分數形式表示。被除數(總數)寫在上面。',
+            options: [
+                { html: '<span class="fraction text-2xl"><span class="text-blue-600">4000</span><span class="text-green-600">m</span></span>', correct: true, exp: '答對了！4000 ÷ m 寫成分數就是 4000/m。' },
+                { html: '<span class="fraction text-2xl"><span class="text-green-600">m</span><span class="text-blue-600">4000</span></span>', correct: false, exp: '不對喔！被除數(總數 4000) 應該寫在分數的上面(分子)。' }
+            ]
+        },
+        {
+            icon: '🍬 ➗', badge: '第一部分：重溫 (除法 2)', badgeColor: 'bg-pink-500',
+            q: '檸檬糖有 <span class="text-green-600 text-3xl">e</span> 克，平分成 <span class="text-blue-600 text-3xl">25</span> 袋。<br>每袋有多少克？',
+            options: [
+                { html: '<span class="fraction text-2xl"><span class="text-green-600">e</span><span class="text-blue-600">25</span></span>', correct: true, exp: '太棒了！總重量 e 是被除數，放分子。' },
+                { html: '<span class="fraction text-2xl"><span class="text-blue-600">25</span><span class="text-green-600">e</span></span>', correct: false, exp: '小心！總重量是 e，要用 e 除以 25。' }
+            ]
+        }
+    ];
+
+    const qPart2 = [
+        {
+            icon: '🎂 ➕', badge: '第二部分：新知識 (加括號與單位)', badgeColor: 'bg-purple-500',
+            q: '芷柔今年 <span class="text-blue-600 text-3xl">11</span> 歲，<span class="text-red-500 text-3xl">L</span> 年後，她是多少歲？',
+            hint: '用代數式表示加減法時，代數式需加上 ( )，後面才加上單位。',
+            options: [
+                { html: '(<span class="text-blue-600 text-2xl">11</span> + <span class="text-red-500 text-2xl">L</span>) 歲', correct: true, exp: '完全正確！加減法如果有單位，必須用括號包起來。' },
+                { html: '<span class="text-blue-600 text-2xl">11</span> + <span class="text-red-500 text-2xl">L</span> 歲', correct: false, exp: '漏了括號！這樣別人會誤會只有 L 有單位。' }
+            ]
+        },
+        {
+            icon: '🏃 ➖', badge: '第二部分：新知識 (減法情境)', badgeColor: 'bg-purple-500',
+            q: '200米跑步中，冠軍的成績是 <span class="text-red-500 text-3xl">f</span> 秒，亞軍是 <span class="text-blue-600 text-3xl">35</span> 秒。<br>兩人相差多少秒？',
+            hint: '冠軍跑得比較快，代表他用的時間比亞軍 (35秒) 少！',
+            options: [
+                { html: '(<span class="text-blue-600 text-2xl">35</span> - <span class="text-red-500 text-2xl">f</span>) 秒', correct: true, exp: '非常聰明！因為冠軍時間較短 (f < 35)，所以相差是 35 - f。' },
+                { html: '(<span class="text-red-500 text-2xl">f</span> - <span class="text-blue-600 text-2xl">35</span>) 秒', correct: false, exp: '想想看，冠軍用的時間會比 35 秒長還是短呢？' }
+            ]
+        },
+        {
+            icon: '🚴 ✖️', badge: '第二部分：新知識 (乘法建模)', badgeColor: 'bg-rose-500',
+            q: '偉明每天練習單車 <span class="text-blue-600 text-3xl">2</span> 小時。<br>慧詩每天練習的時間是偉明的 <span class="text-red-500 text-3xl">Y</span> 倍。<br>慧詩練習多少小時？',
+            options: [
+                { html: '<span class="text-blue-600 text-2xl">2</span><span class="text-red-500 text-2xl">Y</span>', correct: true, exp: '正確！2 的 Y 倍就是 2 × Y，寫作 2Y。' },
+                { html: '<span class="text-blue-600 text-2xl">2</span> + <span class="text-red-500 text-2xl">Y</span>', correct: false, exp: '「倍」代表要使用乘法喔！' }
+            ]
+        },
+        {
+            icon: '🚴 ➗', badge: '第二部分：新知識 (除法動畫建模)', badgeColor: 'bg-rose-500',
+            q: '教練要求慧詩 5 天共練習 <span class="text-purple-600 text-3xl">T</span> 小時。<br>平均每天練習多少小時？',
+            special: 'anim_div', // Triggers special UI
+            options: [
+                { html: '<span class="fraction text-2xl"><span class="text-purple-600">T</span><span class="text-gray-700">5</span></span>', correct: true, exp: '做得好！將總數 T 平分成 5 份。' },
+                { html: '<span class="fraction text-2xl"><span class="text-gray-700">5</span><span class="text-purple-600">T</span></span>', correct: false, exp: '被除數 (總時數 T) 應該放在分子的位置！' }
+            ]
+        },
+        {
+            icon: '📝 🧠', badge: '第二部分：新知識 (逆向思維創作)', badgeColor: 'bg-green-600',
+            q: '我們學會了列式，現在來逆向挑戰！<br>看到代數式 <span class="text-red-600 text-4xl">2Y</span>，<br>這可以代表以下哪個應用題情境？',
+            options: [
+                { html: '每包餅乾有 <span class="text-red-600 text-xl">Y</span> 塊，弟弟買了 2 包，共有多少塊？', correct: true, exp: '挑戰成功！每包 Y 塊，2 包就是 2 × Y = 2Y。' },
+                { html: '有 <span class="text-red-600 text-xl">Y</span> 包餅乾，弟弟吃了 2 包，還剩多少包？', correct: false, exp: '這是減法情境，代數式應該是 Y - 2。' }
+            ]
+        }
+    ];
+
+    let currentArray = [];
+    let currentIndex = 0;
+    let currentPart = 1;
+
+    // --- Game Logic ---
+    function startPart(partNum) {
+        initAudio();
+        currentPart = partNum;
+        currentArray = partNum === 1 ? qPart1 : qPart2;
+        currentIndex = 0;
+        
+        document.getElementById('screen-menu').classList.remove('active');
+        document.getElementById('screen-question').classList.add('active');
+        
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const q = currentArray[currentIndex];
+        
+        // Progress
+        document.getElementById('q-progress').innerText = `${currentIndex + 1} / ${currentArray.length}`;
+        const badge = document.getElementById('q-badge');
+        badge.innerText = q.badge;
+        badge.className = `px-4 py-1.5 rounded-full font-bold text-sm tracking-widest text-white shadow-sm ${q.badgeColor}`;
+        
+        // Content
+        document.getElementById('q-icon').innerText = q.icon;
+        document.getElementById('q-title').innerHTML = q.q;
+        
+        // Hint
+        const hintBox = document.getElementById('q-hint-container');
+        if (q.hint) {
+            document.getElementById('q-hint-text').innerText = '💡 提示：' + q.hint;
+            hintBox.classList.remove('hidden');
+        } else {
+            hintBox.classList.add('hidden');
+        }
+
+        // Special Animation (Bar Model)
+        const animBox = document.getElementById('q-special-anim');
+        if (q.special === 'anim_div') {
+            animBox.classList.remove('hidden');
+            animBox.innerHTML = `
+                <div class="w-full text-center font-bold text-purple-600 mb-2">總時數 = T 小時</div>
+                <div class="bar-container" id="anim-bar">
+                    <div id="whole-bar" class="w-full h-full bg-purple-500 flex items-center justify-center font-black text-white text-2xl transition-all duration-500">T</div>
+                </div>
+                <div class="w-full text-center">
+                    <button id="play-anim-btn" onclick="playBarAnimation()" class="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2 px-6 rounded-full border-2 border-purple-300 shadow">
+                        🎬 點擊平分成 5 天
+                    </button>
+                </div>
+            `;
+            // Hide options initially to force animation interaction
+            document.getElementById('q-options').classList.add('hidden');
+        } else {
+            animBox.classList.add('hidden');
+            document.getElementById('q-options').classList.remove('hidden');
+        }
+
+        // Options
+        const optContainer = document.getElementById('q-options');
+        optContainer.innerHTML = '';
+        
+        // Shuffle options for variation (optional, but good for games. Let's keep fixed for educational flow here based on textbook)
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            
+            // Add alphabetical label (A, B, C) if not already in HTML
+            let labelHtml = '';
+            if (!opt.html.startsWith('A.') && !opt.html.startsWith('B.') && !opt.html.startsWith('C.') && !opt.html.includes('<span class="fraction')) {
+                // If it's a fraction or complex, label is usually inside. If it's simple text, we can prepend.
+                // The provided data already has A. B. or fractions. We'll just render HTML.
+            }
+            
+            btn.innerHTML = `<div class="flex-1 text-center">${opt.html}</div>`;
+            btn.onclick = () => handleAnswer(btn, opt.correct, opt.exp);
+            optContainer.appendChild(btn);
+        });
+
+        // Reset Feedback & Next Button
+        document.getElementById('q-feedback').classList.add('hidden');
+        document.getElementById('q-next-btn').classList.add('hidden');
+    }
+
+    function handleAnswer(btn, isCorrect, explanation) {
+        const buttons = document.querySelectorAll('.btn-option');
+        buttons.forEach(b => b.disabled = true);
+        
+        const fb = document.getElementById('q-feedback');
+        const nextBtn = document.getElementById('q-next-btn');
+        
+        fb.classList.remove('hidden');
+        
+        if (isCorrect) {
+            playSound('correct');
+            btn.classList.add('correct');
+            fb.className = 'w-full max-w-xl mt-6 p-5 rounded-2xl font-black text-center text-lg md:text-xl shadow-lg bg-green-100 text-green-800 border-4 border-green-400';
+            fb.innerHTML = `✅ ${explanation}`;
+            
+            nextBtn.classList.remove('hidden');
+            
+            // Determine next button text & color
+            if (currentIndex === currentArray.length - 1) {
+                nextBtn.innerText = currentPart === 1 ? '🎉 完成重溫！返回主選單' : '🏆 領取證書！';
+                nextBtn.className = 'mt-8 text-white font-black text-xl py-4 px-10 rounded-full shadow-xl transform transition hover:scale-105 active:scale-95 bg-green-500 hover:bg-green-600';
+            } else {
+                nextBtn.innerText = '下一題 ➔';
+                nextBtn.className = `mt-8 text-white font-black text-xl py-4 px-10 rounded-full shadow-xl transform transition hover:scale-105 active:scale-95 ${currentPart === 1 ? 'bg-blue-500 hover:bg-blue-600' : 'bg-yellow-500 hover:bg-yellow-600'}`;
+            }
+
+        } else {
+            playSound('wrong');
+            btn.classList.add('wrong');
+            fb.className = 'w-full max-w-xl mt-6 p-5 rounded-2xl font-black text-center text-lg md:text-xl shadow-lg bg-red-100 text-red-800 border-4 border-red-400';
+            fb.innerHTML = `❌ ${explanation}`;
+            
+            // Allow retry
+            setTimeout(() => {
+                buttons.forEach(b => {
+                    if (!b.classList.contains('wrong')) b.disabled = false;
+                });
+                fb.classList.add('hidden');
+            }, 2500);
+        }
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        if (currentIndex < currentArray.length) {
+            renderQuestion();
+        } else {
+            if (currentPart === 1) {
+                backToMenu();
+            } else {
+                showEndScreen();
+            }
+        }
+    }
+
+    function showEndScreen() {
+        playSound('victory');
+        document.getElementById('screen-question').classList.remove('active');
+        document.getElementById('screen-end').classList.add('active');
+        
+        // Confetti
+        if (typeof confetti === 'function') {
+            const duration = 3000;
+            const end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#22c55e', '#3b82f6', '#eab308'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#22c55e', '#3b82f6', '#eab308'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+    }
+
+    function backToMenu() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-menu').classList.add('active');
+    }
+
+    // --- Special Bar Animation ---
+    function playBarAnimation() {
+        playSound('correct');
+        const container = document.getElementById('anim-bar');
+        document.getElementById('play-anim-btn').classList.add('hidden');
+        
+        const wholeBar = document.getElementById('whole-bar');
+        wholeBar.style.opacity = '0';
+        
+        setTimeout(() => {
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'bar-piece bg-purple-500';
+                piece.innerHTML = '<div class="fraction text-sm"><span>T</span><span>5</span></div>';
+                container.appendChild(piece);
+                
+                setTimeout(() => piece.classList.add('show'), i * 150);
+            }
+            
+            // Show options after animation
+            setTimeout(() => {
+                document.getElementById('q-options').classList.remove('hidden');
+                document.getElementById('q-options').classList.add('animate-[fadeIn_0.5s_ease-out]');
+            }, 1000);
+            
+        }, 300);
+    }
+</script>
+
+</body>
+</html>
